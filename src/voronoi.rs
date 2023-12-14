@@ -40,8 +40,8 @@ impl Voronoi {
 		let Some(position) = (
 			match edge_mode {
 				EdgeMode::Clamp => Some((
-					position.0.clamp(0, self.width as i64) as u32,
-					position.1.clamp(0, self.height as i64) as u32
+					position.0.clamp(0, self.width as i64 - 1) as u32,
+					position.1.clamp(0, self.height as i64 - 1) as u32
 				)),
 				EdgeMode::Repeat => Some((
 					position.0.rem_euclid(self.width as i64) as u32,

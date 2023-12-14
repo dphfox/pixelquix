@@ -54,10 +54,8 @@ fn main() {
 	let mut voronoi_write = &mut voronoi2;
 
 	println!("Preparing Voronoi graph for filling...");
-	let mut coords = Vec::with_capacity((width * height) as usize);
 	for y in 0..height {
 		for x in 0..width {
-			coords.push((x, y));
 			let alpha = image.get_pixel(x, y)[3];
 			if alpha > preserve_above {
 				voronoi_read.set_closest((x, y), Some((x, y)));
@@ -67,9 +65,9 @@ fn main() {
 
 	println!("Filling Voronoi graph...");
 	loop {
-		coords.par_iter().cloned().filter_map(|xy_unsigned| {
-			let x = xy_unsigned.0 as i64;
-			let y = xy_unsigned.1 as i64;
+		(0..width*height).into_par_iter().filter_map(|index: u32| {
+			let x = index.rem_euclid(width) as i64;
+			let y = (index / width) as i64;
 			const CARDINAL_MULT: f64 = 1.0;
 			const DIAGONAL_MULT: f64 = 1.41421356;
 			let maybe_closest = [
@@ -98,7 +96,7 @@ fn main() {
 			reduce(|best, candidate| if candidate.1 < best.1 { candidate } else { best });
 
 			if let Some(closest) = maybe_closest {
-				Some((xy_unsigned, Some(closest.0)))
+				Some(((x as u32, y as u32), Some(closest.0)))
 			} else {
 				None
 			}
@@ -120,7 +118,9 @@ fn main() {
 	match args.output_as {
 		OutputAs::Bleed => {
 			println!("Bleeding pixels and preserving alpha...");
-			for (x, y) in coords.iter().cloned() {
+			(0..width*height).for_each(|index: u32| {
+				let x = index.rem_euclid(width);
+				let y = index / width;
 				if let Some(position) = voronoi_read.get_closest((x as i64, y as i64), args.edge_mode) {
 					let colour = image.get_pixel(position.0, position.1);
 					let alpha = image.get_pixel(x, y)[3];
@@ -128,22 +128,26 @@ fn main() {
 				} else {
 					image.put_pixel(x, y, Rgba([0, 0, 0, 0]));
 				}
-			}
+			})
 		},
 		OutputAs::BleedOpaque => {
 			println!("Bleeding pixels and discarding alpha...");
-			for (x, y) in coords.iter().cloned() {
+			(0..width*height).for_each(|index: u32| {
+				let x = index.rem_euclid(width);
+				let y = index / width;
 				if let Some(position) = voronoi_read.get_closest((x as i64, y as i64), args.edge_mode) {
 					let colour = image.get_pixel(position.0, position.1);
 					image.put_pixel(x, y, Rgba([colour[0], colour[1], colour[2], 255]));
 				} else {
 					image.put_pixel(x, y, Rgba([0, 0, 0, 0]));
 				}
-			}
+			})
 		},
 		OutputAs::UV => {
 			println!("Plotting closest UVs...");
-			for (x, y) in coords.iter().cloned() {
+			(0..width*height).for_each(|index: u32| {
+				let x = index.rem_euclid(width);
+				let y = index / width;
 				if let Some(position) = voronoi_read.get_closest((x as i64, y as i64), args.edge_mode) {
 					image.put_pixel(x, y, Rgba([
 						(position.0 as f64 * 255.0 / width as f64).round() as u8, 
@@ -154,21 +158,25 @@ fn main() {
 				} else {
 					image.put_pixel(x, y, Rgba([0, 0, 0, 255]));
 				}
-			}
+			})
 		},
 		OutputAs::Coverage => {
 			println!("Plotting Voronoi coverage...");
-			for (x, y) in coords.iter().cloned() {
+			(0..width*height).for_each(|index: u32| {
+				let x = index.rem_euclid(width);
+				let y = index / width;
 				if let Some(_) = voronoi_read.get_closest((x as i64, y as i64), args.edge_mode) {
 					image.put_pixel(x, y, Rgba([255, 255, 255, 255]));
 				} else {
 					image.put_pixel(x, y, Rgba([0, 0, 0, 255]));
 				}
-			}
+			})
 		},
 		OutputAs::Distance => {
 			println!("Plotting distance field...");
-			for (x, y) in coords.iter().cloned() {
+			(0..width*height).for_each(|index: u32| {
+				let x = index.rem_euclid(width);
+				let y = index / width;
 				if let Some(position) = voronoi_read.get_closest((x as i64, y as i64), args.edge_mode) {
 					let distance_x = position.0 as f64 - x as f64;
 					let distance_y = position.1 as f64 - y as f64;
@@ -178,7 +186,7 @@ fn main() {
 				} else {
 					image.put_pixel(x, y, Rgba([0, 0, 0, 255]));
 				}
-			}
+			})
 		},
 	}
 
