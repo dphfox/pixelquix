@@ -68,26 +68,24 @@ fn main() {
 		(0..width*height).into_par_iter().filter_map(|index: u32| {
 			let x = index.rem_euclid(width) as i64;
 			let y = (index / width) as i64;
-			const CARDINAL_MULT: f64 = 1.0;
-			const DIAGONAL_MULT: f64 = 1.41421356;
 			let maybe_closest = [
-				(voronoi_read.get_closest((x, y), args.edge_mode), 1.0),
-				(voronoi_read.get_closest((x, y - search_radius), args.edge_mode), CARDINAL_MULT),
-				(voronoi_read.get_closest((x, y + search_radius), args.edge_mode), CARDINAL_MULT),
-				(voronoi_read.get_closest((x - search_radius, y), args.edge_mode), CARDINAL_MULT),
-				(voronoi_read.get_closest((x + search_radius, y), args.edge_mode), CARDINAL_MULT),
-				(voronoi_read.get_closest((x - search_radius, y - search_radius), args.edge_mode), DIAGONAL_MULT),
-				(voronoi_read.get_closest((x - search_radius, y + search_radius), args.edge_mode), DIAGONAL_MULT),
-				(voronoi_read.get_closest((x + search_radius, y - search_radius), args.edge_mode), DIAGONAL_MULT),
-				(voronoi_read.get_closest((x + search_radius, y + search_radius), args.edge_mode), DIAGONAL_MULT)
+				voronoi_read.get_closest((x, y), args.edge_mode),
+				voronoi_read.get_closest((x, y - search_radius), args.edge_mode),
+				voronoi_read.get_closest((x, y + search_radius), args.edge_mode),
+				voronoi_read.get_closest((x - search_radius, y), args.edge_mode),
+				voronoi_read.get_closest((x + search_radius, y), args.edge_mode),
+				voronoi_read.get_closest((x - search_radius, y - search_radius), args.edge_mode),
+				voronoi_read.get_closest((x - search_radius, y + search_radius), args.edge_mode),
+				voronoi_read.get_closest((x + search_radius, y - search_radius), args.edge_mode),
+				voronoi_read.get_closest((x + search_radius, y + search_radius), args.edge_mode)
 			]
 			.into_iter()
-			.filter_map(|(maybe_position, multiplier)| {
+			.filter_map(|maybe_position| {
 				if let Some(position) = maybe_position {
 					let distance_x = position.0 as f64 - x as f64;
 					let distance_y = position.1 as f64 - y as f64;
 					let distance = (distance_x * distance_x + distance_y * distance_y).sqrt();
-					Some((position, distance * multiplier))
+					Some((position, distance))
 				} else {
 					None
 				}
